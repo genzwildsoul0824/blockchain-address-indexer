@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Block {
+  id           String        @id
+  height       Int           @unique
+  createdAt    DateTime      @default(now())
+  transactions Transaction[]
+
+  @@index([height])
+}
+
+model Transaction {
+  id        String   @id
+  blockId   String
+  block     Block    @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  inputs    Input[]
+  outputs   Output[]
+  createdAt DateTime @default(now())
+
+  @@index([blockId])
+}
+
+model Input {
+  id            String      @id @default(uuid())
+  transactionId String
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  txId          String
+  outputIndex   Int
+  createdAt     DateTime    @default(now())
+
+  @@index([transactionId])
+  @@index([txId, outputIndex])
+}
+
+model Output {
+  id            String      @id @default(uuid())
+  transactionId String
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  address       String
+  value         BigInt
+  outputIndex   Int
+  spent         Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+
+  @@unique([transactionId, outputIndex])
+  @@index([address])
+  @@index([transactionId, outputIndex])
+}
+
+model AddressBalance {
+  address   String   @id
+  balance   BigInt   @default(0)
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@index([address])
+}
+

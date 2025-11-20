@@ -525,3 +525,72 @@ describe('IndexerService', () => {
     });
   });
 });
+
+describe('Integration Tests - Full Flow', () => {
+  test('should handle the example from README', async () => {
+    // Block 1
+    const tx1: Transaction = {
+      id: 'tx1',
+      inputs: [],
+      outputs: [{ address: 'addr1', value: 10 }],
+    };
+    const block1: Block = {
+      id: createBlockId(1, [tx1]),
+      height: 1,
+      transactions: [tx1],
+    };
+    await IndexerService.processBlock(block1);
+    expect(await IndexerService.getBalance('addr1')).toBe(10);
+
+    // Block 2
+    const tx2: Transaction = {
+      id: 'tx2',
+      inputs: [{ txId: 'tx1', index: 0 }],
+      outputs: [
+        { address: 'addr2', value: 4 },
+        { address: 'addr3', value: 6 },
+      ],
+    };
+    const block2: Block = {
+      id: createBlockId(2, [tx2]),
+      height: 2,
+      transactions: [tx2],
+    };
+    await IndexerService.processBlock(block2);
+    expect(await IndexerService.getBalance('addr1')).toBe(0);
+    expect(await IndexerService.getBalance('addr2')).toBe(4);
+    expect(await IndexerService.getBalance('addr3')).toBe(6);
+
+    // Block 3
+    const tx3: Transaction = {
+      id: 'tx3',
+      inputs: [{ txId: 'tx2', index: 1 }],
+      outputs: [
+        { address: 'addr4', value: 2 },
+        { address: 'addr5', value: 2 },
+        { address: 'addr6', value: 2 },
+      ],
+    };
+    const block3: Block = {
+      id: createBlockId(3, [tx3]),
+      height: 3,
+      transactions: [tx3],
+    };
+    await IndexerService.processBlock(block3);
+    expect(await IndexerService.getBalance('addr1')).toBe(0);
+    expect(await IndexerService.getBalance('addr2')).toBe(4);
+    expect(await IndexerService.getBalance('addr3')).toBe(0);
+    expect(await IndexerService.getBalance('addr4')).toBe(2);
+    expect(await IndexerService.getBalance('addr5')).toBe(2);
+    expect(await IndexerService.getBalance('addr6')).toBe(2);
+
+    // Rollback to height 2
+    await IndexerService.rollbackToHeight(2);
+    expect(await IndexerService.getBalance('addr1')).toBe(0);
+    expect(await IndexerService.getBalance('addr2')).toBe(4);
+    expect(await IndexerService.getBalance('addr3')).toBe(6);
+    expect(await IndexerService.getBalance('addr4')).toBe(0);
+    expect(await IndexerService.getBalance('addr5')).toBe(0);
+    expect(await IndexerService.getBalance('addr6')).toBe(0);
+  });
+});

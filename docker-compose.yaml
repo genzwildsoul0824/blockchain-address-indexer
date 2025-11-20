@@ -4,9 +4,9 @@ services:
   db:
     image: postgres:15
     environment:
-      POSTGRES_USER: myuser
+      POSTGRES_USER: admin
       POSTGRES_PASSWORD: mypassword
-      POSTGRES_DB: mydatabase
+      POSTGRES_DB: indexer_db
     volumes:
       - db_data:/var/lib/postgresql/data
     ports:
@@ -17,7 +17,7 @@ services:
     depends_on:
       - db
     environment:
-      DATABASE_URL: postgres://myuser:mypassword@db:5432/mydatabase
+      DATABASE_URL: postgres://admin:mypassword@db:5432/indexer_db
     ports:
       - "3000:3000"
 

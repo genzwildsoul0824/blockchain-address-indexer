@@ -1,16 +1,27 @@
-# Use an official Node.js runtime as a parent image
 FROM oven/bun:1
 
-# Set the working directory in the container
 WORKDIR /usr/src/app
 
-# Copy the rest of the application code
+# Install OpenSSL for Prisma
+RUN apt-get update -y && apt-get install -y openssl
+
+# Copy package files
+COPY package.json bun.lockb ./
+
+# Install dependencies
+RUN bun install --frozen-lockfile
+
+# Copy application code
 COPY . .
 
-RUN bun install
+# Generate Prisma Client
+RUN bun run prisma:generate
 
-# Expose the port the app runs on
+# Copy and set up entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 EXPOSE 3000
 
-# Define the command to run the app
-ENTRYPOINT bun start
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["bun", "src/index.ts"]
